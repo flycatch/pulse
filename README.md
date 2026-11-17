@@ -1,4 +1,4 @@
-# network-monitor
+# Pulse
 
 Tiny tray/menu-bar app showing live network speed on macOS, Linux and Windows.
 No admin rights needed; samples OS interface counters once per second.
@@ -23,29 +23,29 @@ GNOME also needs the AppIndicator extension to show tray icons.
 
 ```
 cargo install --path .
-network-monitor &
+pulse &
 ```
 
-Binary lands in `~/.cargo/bin/network-monitor`.
+Binary lands in `~/.cargo/bin/pulse`.
 
-**Start at login**: save as `~/Library/LaunchAgents/com.flycatch.network-monitor.plist`
+**Start at login**: save as `~/Library/LaunchAgents/com.flycatch.pulse.plist`
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-  <key>Label</key><string>com.flycatch.network-monitor</string>
-  <key>ProgramArguments</key><array><string>/Users/YOU/.cargo/bin/network-monitor</string></array>
+  <key>Label</key><string>com.flycatch.pulse</string>
+  <key>ProgramArguments</key><array><string>/Users/YOU/.cargo/bin/pulse</string></array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
 </dict></plist>
 ```
 
 ```
-launchctl load ~/Library/LaunchAgents/com.flycatch.network-monitor.plist
+launchctl load ~/Library/LaunchAgents/com.flycatch.pulse.plist
 ```
 
-Remove: `launchctl unload` the same file, delete it, `cargo uninstall network-monitor`.
+Remove: `launchctl unload` the same file, delete it, `cargo uninstall pulse`.
 
 The binary is unsigned. A copy downloaded from CI is quarantined by Gatekeeper:
 right-click > Open, or `xattr -d com.apple.quarantine <file>`.

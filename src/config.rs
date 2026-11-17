@@ -6,12 +6,13 @@ pub const INTERVALS: [u64; 3] = [1, 2, 5];
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Config {
     pub bits: bool,
+    pub show_sys: bool,
     pub interval_secs: u64,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Self { bits: false, interval_secs: 1 }
+        Self { bits: false, show_sys: true, interval_secs: 1 }
     }
 }
 
@@ -21,6 +22,7 @@ impl Config {
         for line in text.lines() {
             match line.split_once('=').map(|(k, v)| (k.trim(), v.trim())) {
                 Some(("bits", v)) => c.bits = v == "true",
+                Some(("sys", v)) => c.show_sys = v != "false",
                 Some(("interval", v)) => {
                     if let Some(n) = v.parse().ok().filter(|n| INTERVALS.contains(n)) {
                         c.interval_secs = n;
@@ -33,11 +35,11 @@ impl Config {
     }
 
     pub fn serialize(&self) -> String {
-        format!("bits={}\ninterval={}\n", self.bits, self.interval_secs)
+        format!("bits={}\nsys={}\ninterval={}\n", self.bits, self.show_sys, self.interval_secs)
     }
 
     fn path() -> Option<PathBuf> {
-        Some(dirs::config_dir()?.join("network-monitor").join("config"))
+        Some(dirs::config_dir()?.join("pulse").join("config"))
     }
 
     pub fn load() -> Self {
@@ -63,7 +65,7 @@ mod tests {
 
     #[test]
     fn roundtrip() {
-        let c = Config { bits: true, interval_secs: 5 };
+        let c = Config { bits: true, show_sys: false, interval_secs: 5 };
         assert_eq!(Config::parse(&c.serialize()), c);
     }
 

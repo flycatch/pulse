@@ -17,6 +17,11 @@ pub fn rate(bytes_per_sec: f64, bits: bool) -> String {
     }
 }
 
+/// e.g. `CPU 12% MEM 45% DSK 60%`.
+pub fn sys_line(cpu: f32, mem: f32, disk: f32) -> String {
+    format!("CPU {cpu:.0}% MEM {mem:.0}% DSK {disk:.0}%")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -27,6 +32,11 @@ mod tests {
         assert_eq!(rate(999.0, false), "999 B/s");
         assert_eq!(rate(1_500.0, false), "1.5 KB/s");
         assert_eq!(rate(2_500_000.0, false), "2.5 MB/s");
+    }
+
+    #[test]
+    fn sys() {
+        assert_eq!(sys_line(12.4, 45.0, 59.6), "CPU 12% MEM 45% DSK 60%");
     }
 
     #[test]

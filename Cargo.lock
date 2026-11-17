@@ -1173,15 +1173,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "network-monitor"
-version = "0.1.0"
+name = "ntapi"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3b335231dfd352ffb0f8017f3b6027a4917f7df785ea2143d8af2adc66980ae"
 dependencies = [
- "dirs",
- "font8x8",
- "softbuffer",
- "sysinfo",
- "tao",
- "tray-icon",
+ "winapi",
 ]
 
 [[package]]
@@ -1319,6 +1316,16 @@ dependencies = [
  "bitflags",
  "block2",
  "objc2",
+ "objc2-core-foundation",
+]
+
+[[package]]
+name = "objc2-io-kit"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33fafba39597d6dc1fb709123dfa8289d39406734be322956a69f0931c73bb15"
+dependencies = [
+ "libc",
  "objc2-core-foundation",
 ]
 
@@ -1536,6 +1543,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "pulse"
+version = "0.1.0"
+dependencies = [
+ "dirs",
+ "font8x8",
+ "softbuffer",
+ "sysinfo",
+ "tao",
+ "tray-icon",
 ]
 
 [[package]]
@@ -1800,6 +1819,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e80749408e2d8bec0ffa303012cf4e1b3b355f4a09087b4fdf7473680f6a2de"
 dependencies = [
  "libc",
+ "memchr",
+ "ntapi",
+ "objc2-core-foundation",
+ "objc2-io-kit",
  "windows",
 ]
 

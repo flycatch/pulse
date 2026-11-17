@@ -1,5 +1,5 @@
 [package]
-name = "network-monitor"
+name = "pulse"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,7 +7,7 @@ edition = "2024"
 dirs = "7.0.0"
 font8x8 = "0.3.1"
 softbuffer = "0.4.8"
-sysinfo = { version = "0.40.4", default-features = false, features = ["network"] }
+sysinfo = { version = "0.40.4", default-features = false, features = ["network", "system", "disk"] }
 tao = "0.37.2"
 tray-icon = "0.26.1"
 

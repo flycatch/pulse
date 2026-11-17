@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::time::Instant;
 
-use sysinfo::Networks;
+use sysinfo::{Disks, Networks, System};
 
 pub const HISTORY: usize = 60;
 
@@ -17,6 +17,9 @@ pub struct Sample {
     pub down: f64,
     pub up: f64,
     pub ifaces: Vec<IfaceRate>,
+    pub cpu: f32,
+    pub mem: f32,
+    pub disk: f32,
 }
 
 /// Skip loopback and virtual interfaces.
@@ -26,6 +29,14 @@ pub fn is_virtual(name: &str) -> bool {
     ];
     let n = name.to_ascii_lowercase();
     n.contains("loopback") || PREFIXES.iter().any(|p| n.starts_with(p))
+}
+
+/// Percentage of `used` in `total`; 0 when total is 0.
+pub fn pct(used: u64, total: u64) -> f32 {
+    if total == 0 {
+        return 0.0;
+    }
+    (used as f64 / total as f64 * 100.0) as f32
 }
 
 /// Bytes/sec from two counter readings; counter reset yields 0.
@@ -38,6 +49,8 @@ pub fn calc_rate(prev: u64, now: u64, secs: f64) -> f64 {
 
 pub struct Monitor {
     networks: Networks,
+    sys: System,
+    disks: Disks,
     last: Instant,
     pub history_down: VecDeque<f64>,
     pub history_up: VecDeque<f64>,
@@ -49,6 +62,8 @@ impl Monitor {
     pub fn new() -> Self {
         Self {
             networks: Networks::new_with_refreshed_list().expect("network list"),
+            sys: System::new().expect("system"),
+            disks: Disks::new_with_refreshed_list().expect("disk list"),
             last: Instant::now(),
             history_down: VecDeque::with_capacity(HISTORY),
             history_up: VecDeque::with_capacity(HISTORY),
@@ -84,6 +99,17 @@ impl Monitor {
             s.ifaces.push(r);
         }
         s.ifaces.sort_by(|a, b| a.name.cmp(&b.name));
+        self.sys.refresh_cpu_usage();
+        self.sys.refresh_memory();
+        self.disks.refresh(true);
+        s.cpu = self.sys.global_cpu_usage();
+        s.mem = pct(self.sys.used_memory(), self.sys.total_memory());
+        s.disk = self
+            .disks
+            .iter()
+            .find(|d| d.mount_point() == std::path::Path::new("/"))
+            .or_else(|| self.disks.iter().next())
+            .map_or(0.0, |d| pct(d.total_space() - d.available_space(), d.total_space()));
         push(&mut self.history_down, s.down);
         push(&mut self.history_up, s.up);
         s
@@ -106,6 +132,12 @@ mod tests {
         assert_eq!(calc_rate(100, 300, 2.0), 100.0);
         assert_eq!(calc_rate(500, 100, 1.0), 0.0); // reset
         assert_eq!(calc_rate(0, 100, 0.0), 0.0);
+    }
+
+    #[test]
+    fn percent() {
+        assert_eq!(pct(1, 4), 25.0);
+        assert_eq!(pct(5, 0), 0.0);
     }
 
     #[test]

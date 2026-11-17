@@ -26,8 +26,8 @@ jobs:
       - run: cargo build --release
       - uses: actions/upload-artifact@v4
         with:
-          name: network-monitor-${{ runner.os }}
+          name: pulse-${{ runner.os }}
           path: |
-            target/release/network-monitor
-            target/release/network-monitor.exe
+            target/release/pulse
+            target/release/pulse.exe
           if-no-files-found: ignore

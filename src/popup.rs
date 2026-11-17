@@ -34,7 +34,7 @@ impl Popup {
         anchor: Option<(PhysicalPosition<f64>, f64, f64)>,
     ) -> Option<Self> {
         let mut wb = WindowBuilder::new()
-            .with_title("Network Monitor")
+            .with_title("Pulse")
             .with_inner_size(LogicalSize::new(W, H))
             .with_decorations(false)
             .with_resizable(false)
@@ -190,6 +190,7 @@ mod tests {
             down: 1_560_000.0,
             up: 195_000.0,
             ifaces: vec![crate::stats::IfaceRate { name: "en0".into(), down: 1_560_000.0, up: 195_000.0 }],
+            ..Sample::default()
         };
         let (w, h) = (W as i32, H as i32);
         let mut buf = vec![0u32; (w * h) as usize];

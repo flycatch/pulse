@@ -48,6 +48,8 @@ fn main() {
     let quit = MenuItem::new("Quit", true, None);
     let mut cfg = config::Config::load();
     let bits_item = CheckMenuItem::new("Show bits (b/s)", true, cfg.bits, None);
+    let sys_item = CheckMenuItem::new("Show CPU/mem/disk", true, cfg.show_sys, None);
+    let sys_row = MenuItem::new("…", false, None);
     let interval_items: Vec<CheckMenuItem> = config::INTERVALS
         .iter()
         .map(|&n| CheckMenuItem::new(format!("{n}s"), true, n == cfg.interval_secs, None))
@@ -57,9 +59,11 @@ fn main() {
     let interval_menu = Submenu::with_items("Update interval", true, &interval_refs).expect("submenu");
     menu.append_items(&[
         &total_item,
+        &sys_row,
         &graph_item,
         &PredefinedMenuItem::separator(),
         &bits_item,
+        &sys_item,
         &interval_menu,
         &PredefinedMenuItem::separator(),
         &quit,
@@ -67,7 +71,7 @@ fn main() {
     .ok();
     let (quit_id, graph_id) = (quit.id().clone(), graph_item.id().clone());
 
-    // One disabled row per interface, inserted after the total row (position 0).
+    // One disabled row per interface, inserted after the total and system rows (positions 0, 1).
     let mut iface_rows: Vec<MenuItem> = Vec::new();
     let mut next_tick = Instant::now() + Duration::from_secs(cfg.interval_secs);
     let mut tray = None;
@@ -97,12 +101,15 @@ fn main() {
             Event::NewEvents(StartCause::ResumeTimeReached { .. }) => {
                 next_tick = Instant::now() + Duration::from_secs(cfg.interval_secs);
                 last = monitor.sample();
-                let title = format!(
+                let net = format!(
                     "↓{} ↑{}",
                     format::rate(last.down, cfg.bits),
                     format::rate(last.up, cfg.bits)
                 );
-                total_item.set_text(&title);
+                total_item.set_text(&net);
+                let sys = format::sys_line(last.cpu, last.mem, last.disk);
+                sys_row.set_text(&sys);
+                let title = if cfg.show_sys { format!("{net} · {sys}") } else { net };
                 while iface_rows.len() > last.ifaces.len() {
                     if let Some(r) = iface_rows.pop() {
                         menu.remove(&r).ok();
@@ -110,7 +117,7 @@ fn main() {
                 }
                 while iface_rows.len() < last.ifaces.len() {
                     let r = MenuItem::new("", false, None);
-                    menu.insert(&r, 1 + iface_rows.len()).ok();
+                    menu.insert(&r, 2 + iface_rows.len()).ok();
                     iface_rows.push(r);
                 }
                 for (row, i) in iface_rows.iter().zip(&last.ifaces) {
@@ -160,6 +167,9 @@ fn main() {
                     popup = popup::Popup::open(target, anchor);
                 } else if e.id == *bits_item.id() {
                     cfg.bits = bits_item.is_checked();
+                    cfg.save();
+                } else if e.id == *sys_item.id() {
+                    cfg.show_sys = sys_item.is_checked();
                     cfg.save();
                 } else if let Some(n) = interval_items
                     .iter()
