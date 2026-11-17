@@ -23,7 +23,19 @@ GNOME also needs the AppIndicator extension to show tray icons.
 
 `--popup` opens the popup at startup (handy for development).
 
-## Install (macOS)
+## Install
+
+macOS (Apple Silicon / Intel) and Linux x86_64:
+
+```
+curl -fsSL https://raw.githubusercontent.com/flycatch/pulse/main/install.sh | sh
+pulse &
+```
+
+Installs to `~/.local/bin` (override with `PULSE_INSTALL_DIR`, pin a release with `PULSE_VERSION=v0.1.0`).
+Uninstall: `rm ~/.local/bin/pulse`.
+
+### From source (macOS)
 
 ```
 cargo install --path .
