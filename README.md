@@ -3,7 +3,11 @@
 Tiny tray/menu-bar app showing live network speed on macOS, Linux and Windows.
 No admin rights needed; samples OS interface counters once per second.
 
-- **macOS**: `↓ ↑` speed text in the menu bar.
+![Pulse in the macOS menu bar](docs/menubar.png)
+
+Also shows CPU, memory and system-disk usage as percentages (toggle in the menu).
+
+- **macOS**: `↓ ↑` speed text plus CPU / MEM / DSK percentages in the menu bar.
 - **Windows / Linux**: tray icon redrawn with down (green) / up (orange) speeds; full values in the tooltip.
 - **Left-click** the tray icon: popup with 60 s graphs, session totals and per-interface rates.
   **Right-click**: menu (Show graph, Quit).
