@@ -49,6 +49,8 @@ fn main() {
         .ok();
     let (quit_id, graph_id) = (quit.id().clone(), graph_item.id().clone());
 
+    // One disabled row per interface, inserted after the total row (position 0).
+    let mut iface_rows: Vec<MenuItem> = Vec::new();
     let mut tray = None;
     let mut monitor = stats::Monitor::new();
     let mut last = stats::Sample::default();
@@ -82,6 +84,24 @@ fn main() {
                     format::rate(last.up, bits)
                 );
                 total_item.set_text(&title);
+                while iface_rows.len() > last.ifaces.len() {
+                    if let Some(r) = iface_rows.pop() {
+                        menu.remove(&r).ok();
+                    }
+                }
+                while iface_rows.len() < last.ifaces.len() {
+                    let r = MenuItem::new("", false, None);
+                    menu.insert(&r, 1 + iface_rows.len()).ok();
+                    iface_rows.push(r);
+                }
+                for (row, i) in iface_rows.iter().zip(&last.ifaces) {
+                    row.set_text(format!(
+                        "{}: ↓{} ↑{}",
+                        i.name,
+                        format::rate(i.down, bits),
+                        format::rate(i.up, bits)
+                    ));
+                }
                 if let Some(t) = &tray {
                     #[cfg(target_os = "macos")]
                     t.set_title(Some(&title));
