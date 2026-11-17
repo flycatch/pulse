@@ -1,5 +1,6 @@
 #![cfg_attr(all(not(debug_assertions), windows), windows_subsystem = "windows")]
 
+mod config;
 mod format;
 mod icon;
 mod popup;
@@ -11,10 +12,10 @@ use tao::event::{Event, StartCause, WindowEvent};
 use tao::event_loop::{ControlFlow, EventLoopBuilder};
 #[cfg(target_os = "macos")]
 use tao::platform::macos::{ActivationPolicy, EventLoopExtMacOS};
-use tray_icon::menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem};
+use tray_icon::menu::{
+    CheckMenuItem, IsMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu,
+};
 use tray_icon::{Icon, MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-
-const TICK: Duration = Duration::from_secs(1);
 
 enum UserEvent {
     Tray(TrayIconEvent),
@@ -45,23 +46,40 @@ fn main() {
     let total_item = MenuItem::new("…", false, None);
     let graph_item = MenuItem::new("Show graph", true, None);
     let quit = MenuItem::new("Quit", true, None);
-    menu.append_items(&[&total_item, &graph_item, &PredefinedMenuItem::separator(), &quit])
-        .ok();
+    let mut cfg = config::Config::load();
+    let bits_item = CheckMenuItem::new("Show bits (b/s)", true, cfg.bits, None);
+    let interval_items: Vec<CheckMenuItem> = config::INTERVALS
+        .iter()
+        .map(|&n| CheckMenuItem::new(format!("{n}s"), true, n == cfg.interval_secs, None))
+        .collect();
+    let interval_refs: Vec<&dyn IsMenuItem> =
+        interval_items.iter().map(|i| i as &dyn IsMenuItem).collect();
+    let interval_menu = Submenu::with_items("Update interval", true, &interval_refs).expect("submenu");
+    menu.append_items(&[
+        &total_item,
+        &graph_item,
+        &PredefinedMenuItem::separator(),
+        &bits_item,
+        &interval_menu,
+        &PredefinedMenuItem::separator(),
+        &quit,
+    ])
+    .ok();
     let (quit_id, graph_id) = (quit.id().clone(), graph_item.id().clone());
 
     // One disabled row per interface, inserted after the total row (position 0).
     let mut iface_rows: Vec<MenuItem> = Vec::new();
+    let mut next_tick = Instant::now() + Duration::from_secs(cfg.interval_secs);
     let mut tray = None;
     let mut monitor = stats::Monitor::new();
     let mut last = stats::Sample::default();
     let mut popup: Option<popup::Popup> = None;
     let mut anchor = None;
-    let bits = false;
     #[cfg(not(target_os = "macos"))]
     let mut icon_key = String::new();
 
     event_loop.run(move |event, target, flow| {
-        *flow = ControlFlow::WaitUntil(Instant::now() + TICK);
+        *flow = ControlFlow::WaitUntil(next_tick);
         match event {
             Event::NewEvents(StartCause::Init) => {
                 tray = Some(
@@ -77,11 +95,12 @@ fn main() {
                 }
             }
             Event::NewEvents(StartCause::ResumeTimeReached { .. }) => {
+                next_tick = Instant::now() + Duration::from_secs(cfg.interval_secs);
                 last = monitor.sample();
                 let title = format!(
                     "↓{} ↑{}",
-                    format::rate(last.down, bits),
-                    format::rate(last.up, bits)
+                    format::rate(last.down, cfg.bits),
+                    format::rate(last.up, cfg.bits)
                 );
                 total_item.set_text(&title);
                 while iface_rows.len() > last.ifaces.len() {
@@ -98,8 +117,8 @@ fn main() {
                     row.set_text(format!(
                         "{}: ↓{} ↑{}",
                         i.name,
-                        format::rate(i.down, bits),
-                        format::rate(i.up, bits)
+                        format::rate(i.down, cfg.bits),
+                        format::rate(i.up, cfg.bits)
                     ));
                 }
                 if let Some(t) = &tray {
@@ -139,6 +158,22 @@ fn main() {
                     *flow = ControlFlow::Exit;
                 } else if e.id == graph_id && popup.is_none() {
                     popup = popup::Popup::open(target, anchor);
+                } else if e.id == *bits_item.id() {
+                    cfg.bits = bits_item.is_checked();
+                    cfg.save();
+                } else if let Some(n) = interval_items
+                    .iter()
+                    .zip(config::INTERVALS)
+                    .find(|(i, _)| *i.id() == e.id)
+                    .map(|(_, n)| n)
+                {
+                    // Behave like radio buttons.
+                    for (i, v) in interval_items.iter().zip(config::INTERVALS) {
+                        i.set_checked(v == n);
+                    }
+                    cfg.interval_secs = n;
+                    next_tick = Instant::now() + Duration::from_secs(n);
+                    cfg.save();
                 }
             }
             Event::WindowEvent { window_id, event, .. } => {
@@ -152,7 +187,7 @@ fn main() {
             }
             Event::RedrawRequested(window_id) => {
                 if let Some(p) = popup.as_mut().filter(|p| p.is(window_id)) {
-                    p.draw(&monitor, &last, bits);
+                    p.draw(&monitor, &last, cfg.bits);
                 }
             }
             _ => {}

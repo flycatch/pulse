@@ -1176,6 +1176,7 @@ dependencies = [
 name = "network-monitor"
 version = "0.1.0"
 dependencies = [
+ "dirs",
  "font8x8",
  "softbuffer",
  "sysinfo",
